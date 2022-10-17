@@ -11,52 +11,39 @@ public class UserDaoJDBCImpl implements UserDao {
     private static final String TABLE_NAME = "myTable";
     private final Connection conn;
 
-    public UserDaoJDBCImpl() throws SQLException {
+    public UserDaoJDBCImpl()  {
         conn = Util.getConnection();
     }
 
-    public void createUsersTable() throws SQLException {
+    public void createUsersTable() {
 
-        String sql = "CREATE TABLE " + TABLE_NAME + " (" + "id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, "
+        String sql = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" + "id BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, "
                 + "name VARCHAR(50), " + "lastname VARCHAR(50), " + "age  TINYINT)";
-        DatabaseMetaData dbm = conn.getMetaData();
 
-        try( Statement st = conn.createStatement();
-             ResultSet tables = dbm.getTables(null, null, TABLE_NAME, null))
-        {
-            if (tables.next()) {
-                System.out.println("table already exists");
-            } else {
-                st.execute(sql);
-                System.out.println("table is created ");
-            }
+        try( Statement st = conn.createStatement()){
+            st.execute(sql);
+            System.out.println("The table has been created");
         } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("table doesn't created");
+            System.out.println("The table hasn't been created");
         }
     }
 
-    public void dropUsersTable() throws SQLException {
-        String sql = "DROP TABLE " + TABLE_NAME;
-        DatabaseMetaData dbm = conn.getMetaData();
+    public void dropUsersTable() {
 
-        try( Statement st = conn.createStatement();
-             ResultSet tables = dbm.getTables(null, null, TABLE_NAME, null) )
-        {
-            if (tables.next()) {
-                st.execute(sql);
-                System.out.println("table is dropped ");
-            } else {
-                System.out.println("table isn't exists ");
-            }
+        String sql = "DROP TABLE IF EXISTS " + TABLE_NAME;
+
+        try( Statement st = conn.createStatement() ){
+            st.execute(sql);
+            System.out.println("The table has been dropped");
         } catch (SQLException e) {
             e.printStackTrace();
-            System.out.println("table doesn't dropped");
+            System.out.println("The table hasn't been dropped");
         }
 
     }
 
-    public void saveUser(String name, String lastName, byte age) throws SQLException {
+    public void saveUser(String name, String lastName, byte age) {
 
         String sql = "INSERT INTO " + TABLE_NAME + " (id, name, lastName, age) VALUES(id, ?, ?, ?)";
 
@@ -84,12 +71,12 @@ public class UserDaoJDBCImpl implements UserDao {
         }
     }
 
-    public List<User> getAllUsers() throws SQLException {
+    public List<User> getAllUsers() {
 
         String sql = "SELECT * FROM " + TABLE_NAME;
         List<User> res = new LinkedList<>();
 
-        try( Statement st = conn.createStatement(); ResultSet rs = st.executeQuery(sql)) {
+        try( PreparedStatement pst = conn.prepareStatement(sql); ResultSet rs = pst.executeQuery()) {
             while(rs.next()) {
                 User user = new User(rs.getString("name"),
                         rs.getString("lastName"), rs.getByte("age"));
@@ -103,6 +90,7 @@ public class UserDaoJDBCImpl implements UserDao {
     }
 
     public void cleanUsersTable() {
+
         String sql = "TRUNCATE TABLE " + TABLE_NAME;
 
         try( Statement st = conn.createStatement()) {
